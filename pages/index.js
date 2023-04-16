@@ -20,8 +20,6 @@ import {
 const inter = Inter({ subsets: ["latin"] });
 
 export default function Home() {
-  const [nftAddress, setNftAddress] = useState("");
-
   const [walletConnected, setWalletConnected] = useState(false);
   const web3ModalRef = useRef();
 
@@ -35,7 +33,7 @@ export default function Home() {
       const signer = web3Provider.getSigner();
       const currentUser = await signer.getAddress();
 
-      const network =await web3Provider.getNetwork();
+      const network = await web3Provider.getNetwork();
 
       console.log(network.chainId);
 
@@ -44,25 +42,39 @@ export default function Home() {
         const nftContract = new Contract(MINTED_CONTRACT, MINTED_ABI, signer);
         const maxId = Number(await nftContract.getCurrentId());
 
-
         for (let i = maxId; i > 0; i--) {
           const tokenUri = await nftContract.tokenURI(i);
           const owner = await nftContract.ownerOf(i);
 
-          _nfts.push({ uri: tokenUri, id: i, canTransfer: owner == currentUser, canReturn: false });
+          _nfts.push({
+            uri: tokenUri,
+            id: i,
+            canTransfer: owner == currentUser,
+            canReturn: false,
+          });
         }
       } else {
-        const nftContract = new Contract(NFT_BRIDGE_POLYGON, NFT_BRIDGE_ABI, signer);
+        const nftContract = new Contract(
+          NFT_BRIDGE_POLYGON,
+          NFT_BRIDGE_ABI,
+          signer
+        );
 
         const contractAddress = await nftContract.nfts(MINTED_CONTRACT);
 
         const polygonNft = new Contract(contractAddress, NFT_ABI, signer);
         const res = await polygonNft.getUserNFT(currentUser);
 
-        for(let i = 0; i < res.length; i++) {
+        for (let i = 0; i < res.length; i++) {
           const tokenUri = await polygonNft.tokenURI(res[i]);
 
-          _nfts.push({ uri: tokenUri, id: res[i], canTransfer: false, canReturn: true, address: contractAddress });
+          _nfts.push({
+            uri: tokenUri,
+            id: res[i],
+            canTransfer: false,
+            canReturn: true,
+            address: contractAddress,
+          });
         }
 
         console.log(res);
@@ -88,7 +100,13 @@ export default function Home() {
           fetch(nft.uri)
             .then((res) => res.json())
             .then((resJson) => {
-              return { ...resJson, id: nft.id, canTransfer: nft.canTransfer, canReturn: nft.canReturn, address: nft.address };
+              return {
+                ...resJson,
+                id: nft.id,
+                canTransfer: nft.canTransfer,
+                canReturn: nft.canReturn,
+                address: nft.address,
+              };
             })
         );
       });
@@ -240,41 +258,48 @@ export default function Home() {
   };
 
   const sendBack = async (tokenId, contractAddress) => {
-    // console.log("Send back ------");
-    // console.log(tokenId);
-    // console.log(contractAddress);
+    console.log("Send back ------");
+    console.log(tokenId);
+    console.log(contractAddress);
 
     const provider = await web3ModalRef.current.connect();
     const web3Provider = new ethers.providers.Web3Provider(provider);
     const signer = web3Provider.getSigner();
     const currentUser = await signer.getAddress();
 
-    const bridgeContract = new Contract(NFT_BRIDGE_POLYGON, NFT_BRIDGE_ABI, signer);
+    const bridgeContract = new Contract(
+      NFT_BRIDGE_POLYGON,
+      NFT_BRIDGE_ABI,
+      signer
+    );
 
-    // const commissionCoin = String(await bridgeContract.commissionCoin());
-    // console.log("Comission Coin------------");
-    // console.log(commissionCoin);
+    const commissionCoin = String(await bridgeContract.commissionCoin());
+    console.log("Comission Coin------------");
+    console.log(commissionCoin);
 
-    // console.log(bridgeContract.address);
+    console.log(bridgeContract.address);
 
-    // const nftContract = new Contract(contractAddress, NFT_ABI, signer);
-    // const nftRes = await nftContract.approve(bridgeContract.address, tokenId);
-    // console.log(nftRes);
+    const nftContract = new Contract(contractAddress, NFT_ABI, signer);
+    const nftRes = await nftContract.approve(bridgeContract.address, tokenId);
+    console.log(nftRes);
 
-    // const res = await bridgeContract.changePayCoin(contractAddress, tokenId, {
-    //   gasLimit: 4000000, value: commissionCoin
-    // });
+    const res = await bridgeContract.changePayCoin(contractAddress, tokenId, {
+      gasLimit: 4000000,
+      value: commissionCoin,
+    });
 
-    // console.log((await res.wait()));
+    console.log(await res.wait());
 
     const bnbAddress = await bridgeContract.nfts(contractAddress);
 
-    const sendRes = await bridgeContract.sendNFT(currentUser, bnbAddress, tokenId);
+    const sendRes = await bridgeContract.sendNFT(
+      currentUser,
+      bnbAddress,
+      tokenId
+    );
 
     console.log(await sendRes.wait());
-  }
-
-  sendBack(0x02, "0x46015FCD679C874260Bc95e8c9689253cE3D73c5");
+  };
 
   return (
     <>
@@ -301,33 +326,12 @@ export default function Home() {
         <div className="jumbotron">
           <div className="container">
             <div className="row">
-              <div className="col-md-8 col-lg-6">
+              <div className="col-sm-12">
                 <h2 className="display-4">NFT Bridge</h2>
                 <p>
                   Project to bridge NFTs, enter contract id below to see your
                   NFTs
                 </p>
-                <input
-                  type="text"
-                  value={nftAddress}
-                  onChange={(e) => setNftAddress(e.target.value)}
-                  className="form-control"
-                ></input>
-                <button
-                  className="btn btn-primary mt-3"
-                  onClick={() =>
-                    askPolygon(
-                      "0xAc3DC96DDbEBf9A2d686b1965F36b145AbB43015",
-                      "0x28D05F24FBEf5cDE724891cE002A2d7F369Da0f8",
-                      0x02,
-                      "https://ipfs.io/ipfs/QmPqnMhjEmDJXU1sK3SRMozWju7uGyGHJ8kzsCDhBE5neT",
-                      "TINT",
-                      "TNT"
-                    )
-                  }
-                >
-                  Read NFTs
-                </button>
               </div>
             </div>
           </div>
