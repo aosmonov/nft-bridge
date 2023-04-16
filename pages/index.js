@@ -62,7 +62,7 @@ export default function Home() {
         for(let i = 0; i < res.length; i++) {
           const tokenUri = await polygonNft.tokenURI(res[i]);
 
-          _nfts.push({ uri: tokenUri, id: i, canTransfer: false, canReturn: true });
+          _nfts.push({ uri: tokenUri, id: res[i], canTransfer: false, canReturn: true, address: contractAddress });
         }
 
         console.log(res);
@@ -88,7 +88,7 @@ export default function Home() {
           fetch(nft.uri)
             .then((res) => res.json())
             .then((resJson) => {
-              return { ...resJson, id: nft.id, canTransfer: nft.canTransfer, canReturn: nft.canReturn };
+              return { ...resJson, id: nft.id, canTransfer: nft.canTransfer, canReturn: nft.canReturn, address: nft.address };
             })
         );
       });
@@ -239,10 +239,42 @@ export default function Home() {
     }
   };
 
-  const sendBack = (itemId) => {
-    console.log("Send back called");
-    console.log(itemId);
+  const sendBack = async (tokenId, contractAddress) => {
+    // console.log("Send back ------");
+    // console.log(tokenId);
+    // console.log(contractAddress);
+
+    const provider = await web3ModalRef.current.connect();
+    const web3Provider = new ethers.providers.Web3Provider(provider);
+    const signer = web3Provider.getSigner();
+    const currentUser = await signer.getAddress();
+
+    const bridgeContract = new Contract(NFT_BRIDGE_POLYGON, NFT_BRIDGE_ABI, signer);
+
+    // const commissionCoin = String(await bridgeContract.commissionCoin());
+    // console.log("Comission Coin------------");
+    // console.log(commissionCoin);
+
+    // console.log(bridgeContract.address);
+
+    // const nftContract = new Contract(contractAddress, NFT_ABI, signer);
+    // const nftRes = await nftContract.approve(bridgeContract.address, tokenId);
+    // console.log(nftRes);
+
+    // const res = await bridgeContract.changePayCoin(contractAddress, tokenId, {
+    //   gasLimit: 4000000, value: commissionCoin
+    // });
+
+    // console.log((await res.wait()));
+
+    const bnbAddress = await bridgeContract.nfts(contractAddress);
+
+    const sendRes = await bridgeContract.sendNFT(currentUser, bnbAddress, tokenId);
+
+    console.log(await sendRes.wait());
   }
+
+  sendBack(0x02, "0x46015FCD679C874260Bc95e8c9689253cE3D73c5");
 
   return (
     <>
@@ -325,7 +357,7 @@ export default function Home() {
                     {item.canReturn && (
                       <button
                         className="btn btn-outline-success"
-                        onClick={() => sendBack(item.id)}
+                        onClick={() => sendBack(item.id, item.address)}
                       >
                         Send back
                       </button>
