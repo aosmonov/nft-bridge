@@ -1,0 +1,19 @@
+body {
+  padding-top: 3.5rem;
+}
+
+.jumbotron {
+  padding: 2rem 1rem;
+  margin-bottom: 2rem;
+  background-color: #e9ecef;
+  border-radius: 0.3rem;
+}
+
+.small-text {
+  font-size: 0.75em;
+  margin-bottom: 3px;
+}
+
+.title-text {
+  margin-bottom: 0;
+}
