@@ -49,7 +49,7 @@ export default function Home() {
           const tokenUri = await nftContract.tokenURI(i);
           const owner = await nftContract.ownerOf(i);
 
-          _nfts.push({ uri: tokenUri, id: i, isOwner: owner == currentUser, owner: owner });
+          _nfts.push({ uri: tokenUri, id: i, canTransfer: owner == currentUser, canReturn: false });
         }
       } else {
         const nftContract = new Contract(NFT_BRIDGE_POLYGON, NFT_BRIDGE_ABI, signer);
@@ -62,7 +62,7 @@ export default function Home() {
         for(let i = 0; i < res.length; i++) {
           const tokenUri = await polygonNft.tokenURI(res[i]);
 
-          _nfts.push({ uri: tokenUri, id: i, isOwner: true });
+          _nfts.push({ uri: tokenUri, id: i, canTransfer: false, canReturn: true });
         }
 
         console.log(res);
@@ -88,7 +88,7 @@ export default function Home() {
           fetch(nft.uri)
             .then((res) => res.json())
             .then((resJson) => {
-              return { ...resJson, id: nft.id, isOwner: nft.isOwner, owner: nft.owner };
+              return { ...resJson, id: nft.id, canTransfer: nft.canTransfer, canReturn: nft.canReturn };
             })
         );
       });
@@ -239,6 +239,11 @@ export default function Home() {
     }
   };
 
+  const sendBack = (itemId) => {
+    console.log("Send back called");
+    console.log(itemId);
+  }
+
   return (
     <>
       <Head>
@@ -309,13 +314,20 @@ export default function Home() {
                     <h5 className="card-title">{item.name}</h5>
                     <hr />
                     <p className="card-text">{item.description}</p>
-                    <p className="card-text">Owner: <span style={{ fontWeight: "bold"}}>{item.owner}</span></p>
-                    {item.isOwner && (
+                    {item.canTransfer && (
                       <button
                         className="btn btn-outline-primary"
                         onClick={() => transfer(item.id)}
                       >
                         Transfer
+                      </button>
+                    )}
+                    {item.canReturn && (
+                      <button
+                        className="btn btn-outline-success"
+                        onClick={() => sendBack(item.id)}
+                      >
+                        Send back
                       </button>
                     )}
                   </div>
